@@ -1,16 +1,16 @@
 # RTL-Contest
 
-#Concolic Testing on RTL for Detecting Security Vulnerabilities
+# Concolic Testing on RTL for Detecting Security Vulnerabilities
 
-#Getting Started
+# Getting Started
 
-#Prerequisites:
+# Prerequisites:
 
 • Icarus Verilog
 
 • Python 3.8
 
-#Getting Started
+# Getting Started
 
 • Create a directory \RTL\RTLVerilog and add the Verilog files to the folder RTLVerilog.
 
