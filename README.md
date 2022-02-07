@@ -8,7 +8,7 @@
 
 • Python 3.8
 
-###### Getting Started
+## Getting Started
 
 • Create a directory \RTL\RTLVerilog and add the Verilog files to the folder RTLVerilog.
 
