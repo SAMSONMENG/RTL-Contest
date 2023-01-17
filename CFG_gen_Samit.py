@@ -485,7 +485,7 @@ def nestedcasestatement(lines: list[str], index4: int, node: str, Nodeinfo: list
                 case_assgn_lst = [x for x in list(re.findall(pattern0, nextline)[0]) if x != '']
                 case_val = case_assgn_lst[case_assgn_lst.index(':') - 1]
                 assgnment_trgt = case_assgn_lst[case_assgn_lst.index("<=") - 1] if "<=" in case_assgn_lst else case_assgn_lst[case_assgn_lst.index("=") - 1]
-                assgnment_val = case_assgn_lst[case_assgn_lst.index("<=" + 1)] if "<=" in case_assgn_lst else case_assgn_lst[case_assgn_lst.index("=") + 1]
+                assgnment_val = case_assgn_lst[case_assgn_lst.index("<=") + 1] if "<=" in case_assgn_lst else case_assgn_lst[case_assgn_lst.index("=") + 1]
                 assgnment = assgnment_trgt + " <== " + assgnment_val
                 case_cond = get_case_assign(case_variable, case_val)
                 node = node1 + ', ' + str(curr_node)
@@ -539,12 +539,12 @@ def get_assgnment(line: str, node: str, Nodeinfo: list[str]):
     :return: Node and CFG after the assignment is done
     '''
     skip_term_lst = ['if', 'defparam', 'parameter', 'logic']
-    assgmnt_pttrn_1 = re.compile(r"\s*(.+)\s*(<=)\s*(.+)\s*;\s*")
-    assgmnt_pttrn_2 = re.compile(r"\s*(.+)\s*(=)\s*(.+)\s*;\s*")
+    assgmnt_pttrn_1 = re.compile(r"\s*(assign)?\s*(.+)\s*(<=)\s*(.+)\s*;\s*")
+    assgmnt_pttrn_2 = re.compile(r"\s*(assign)?\s*(.+)\s*(=)\s*(.+)\s*;\s*")
     line_lst = line.split()
     if re.search(assgmnt_pttrn_1, line) is None and re.search(assgmnt_pttrn_2, line) is None:
         return node, Nodeinfo
-
+    line_s = ""
     if not any(x for x in line_lst if x in skip_term_lst):
         if re.search(assgmnt_pttrn_1, line) is not None:
             line_lst = [x.strip() for x in list(re.findall(assgmnt_pttrn_1, line)[0]) if x != ""]
@@ -565,14 +565,17 @@ def get_assgnment(line: str, node: str, Nodeinfo: list[str]):
 def inline_cond_assgnmnt(line: str, node: str, Nodeinfo: list[str]):
     pattern_1 = re.compile(r"\s*(assign)?\s*(.+)\s*(<=)\s*\(?(.+)\)?\s*(\?)\s*(.+)\s*(:)\s*(.+)\s*;\s*")
     pattern_2 = re.compile(r"\s*(assign)?\s*(.+)\s*(=)\s*\(?(.+)\)?\s*(\?)\s*(.+)\s*(:)\s*(.+)\s*;\s*")
-    cond_pattern_wthsgn = re.compile(r"\(?\s?([a-zA-Z0-9'{}:\[\],._]+)\s?(!=|==|>|>=|<|<=)\s?([a-zA-Z0-9'{}:\[\],._]+)\s?\)?")
-    cond_pattern_wthoutsgn = re.compile(r"\(?\s?(!)?\(?([a-zA-Z0-9'{}:\[\],._]+)\s?\)?\)?")
-    cond_pttrn_sngl_wrd = re.compile(r"\(?([a-zA-Z0-9'{}:\[\],._]+)\s?\)?")
+    cond_pattern_wthsgn = re.compile(r"\(?\s?([\w'{}:\[\],.]+)\s?(!=|==|>|>=|<|<=)\s?([\w'{}:\[\],.]+)\s?\)?")
+    cond_pattern_wthoutsgn = re.compile(r"\(?\s?(!)?\(?([\w'{}:\[\],.]+)\s?\)?\)?")
+    cond_pttrn_sngl_wrd = re.compile(r"\(?([\w'{}:\[\],.]+)\s?\)?")
+    chck_groups: list = []
 
     if re.search(pattern_1, line) is not None:
         chck_groups = [x for x in list(re.findall(pattern_1, line)[0]) if x != '']
+        sgn_flag: bool = True
     elif re.search(pattern_2, line) is not None:
         chck_groups = [x for x in list(re.findall(pattern_2, line)[0]) if x != '']
+        sgn_flag: bool = False
 
     cond = [x for x in chck_groups if chck_groups.index(x) > chck_groups.index('=') if
             chck_groups.index(x) < chck_groups.index('?')]
@@ -608,15 +611,19 @@ def inline_cond_assgnmnt(line: str, node: str, Nodeinfo: list[str]):
         node0 = node + ', 0'
         Nodeinfo_appnd0 = node0 + ' :: ' + cond_f + ' :: ' + 'C'
         Nodeinfo.append(Nodeinfo_appnd0)
-        Nodeinfo_appnd0 = node0 + ' :: ' + chck_groups[0] + ' <== ' + chck_groups[
-            chck_groups.index(':') + 1] + ' :: ' + 'A'
+        if sgn_flag:
+            Nodeinfo_appnd0 = node0 + ' :: ' + chck_groups[chck_groups.index("<=") - 1] + ' <== ' + chck_groups[chck_groups.index(':') + 1] + ' :: ' + 'A'
+        else:
+            Nodeinfo_appnd0 = node0 + ' :: ' + chck_groups[chck_groups.index("=") - 1] + ' <== ' + chck_groups[chck_groups.index(':') + 1] + ' :: ' + 'A'
         Nodeinfo.append(Nodeinfo_appnd0)
 
         node1 = node + ', 1'
         Nodeinfo_appnd1 = node1 + ' :: ' + cond_t + ' :: ' + 'C'
         Nodeinfo.append(Nodeinfo_appnd1)
-        Nodeinfo_appnd1 = node0 + ' :: ' + chck_groups[0] + ' <== ' + chck_groups[
-            chck_groups.index(':') - 1] + ' :: ' + 'A'
+        if sgn_flag:
+            Nodeinfo_appnd1 = node0 + ' :: ' + chck_groups[chck_groups.index("<=") - 1] + ' <== ' + chck_groups[chck_groups.index(':') - 1] + ' :: ' + 'A'
+        else:
+            Nodeinfo_appnd1 = node0 + ' :: ' + chck_groups[chck_groups.index("=") - 1] + ' <== ' + chck_groups[chck_groups.index(':') - 1] + ' :: ' + 'A'
         Nodeinfo.append(Nodeinfo_appnd1)
 
         return node, Nodeinfo
@@ -707,7 +714,7 @@ def main():
 
     accpt_frmts = ['.v', '.sv']
     file_lst = [x for x in os.listdir(srch_rtl) if os.path.splitext(x)[-1] in accpt_frmts]
-    # file_lst = ["memory_control.sv"]
+    # file_lst = ["system.sv"]
 
     # ================================================= CFG generation =================================================
     for iter_file in file_lst:
@@ -729,10 +736,10 @@ def main():
     # ================================================== Property CFG ==================================================
     module_name, Nodeinfo = gen_CFG(Property_loc)
     print(module_name)
-
+    
     for iter_num, items in enumerate(Nodeinfo):
         Nodeinfo[iter_num] = items + '\n'
-
+    
     with open(os.path.join(Dest_loc, module_name + '.txt'), 'w+') as fl:
         fl.writelines(Nodeinfo)
     print("\n================+++++\tDone\t+++++================\n")
