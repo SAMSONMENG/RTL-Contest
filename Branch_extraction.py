@@ -84,6 +84,8 @@ def extract_pth(brkndwn_lst, strt_branch_line):
             cmplt_path.append(curr_brnch)
             brnch_inf, curr_brnch = fnd_parent_brnch(brkndwn_lst, curr_brnch)
 
+    cmplt_path = cmplt_path[::-1]
+
     return cmplt_path
 
 
